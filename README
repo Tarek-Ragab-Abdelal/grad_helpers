@@ -2,7 +2,7 @@
 
 ### How to use:
 
-1. Clone the repo: `git clone `
+1. Clone the repo: `git clone https://github.com/Tarek-Ragab-Abdelal/grad_helpers.git`
 2. Run install to setup the env `npm install`
    - Note: Make sure that you have nodeJs installed on your PC before this.
 3. Run any of the following scripts as per requirements
