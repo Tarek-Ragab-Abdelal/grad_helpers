@@ -9,46 +9,44 @@ const users = [
   {
     firstName: "Ammar",
     lastName: "Akkram",
-    email: "john.doe@example.com",
-    password: "password123",
+    email: "ammar@fms.com",
+    password: "12345678",
+    role: "ADMIN",
   },
   {
-    firstName: "Jane",
-    lastName: "Doe",
-    email: "jane.doe@example.com",
-    password: "password123",
+    firstName: "Tarek",
+    lastName: "Ragab",
+    email: "tarek@fms.com",
+    password: "12345678",
+    role: "ADMIN",
   },
 ];
 
-const factories = [{ name: "Factory A" }, { name: "Factory B" }];
+let tokens = {};
+const factoryIds = [];
+const assetIds = [];
+const sensorIds = [];
+
+const factories = [{ name: "PAFT" }, { name: "PLASTICO" }];
 
 const assets = [
-  { name: "Asset 1", type: "Type A" },
-  { name: "Asset 2", type: "Type B" },
+  { name: "V-Cola", type: "Production Line 1" },
+  { name: "Big Cola", type: "Production Line 2" },
 ];
 
 const sensors = [
-  { name: "Sensor 1", type: "Type A" },
-  { name: "Sensor 2", type: "Type B" },
+  { name: "Nozzle", type: "Temperature" },
+  { name: "Mold", type: "Temperature" },
+  { name: "Volt", type: "Operating Voltage" },
+  { name: "Pressure", type: "Air Pressure" },
 ];
 
 const readings = [
   {
-    bn: "bn_value",
-    bt: 12345,
-    bu: "bu_value",
-    bv: 123,
-    bs: "bs_value",
-    bver: 1,
-    n: "n_value",
-    u: "u_value",
-    v: 456,
-    vs: "vs_value",
-    vb: true,
-    vd: 789,
-    s: "s_value",
-    t: 987,
-    ut: "ut_value",
+    v: 290,
+    bv: 293,
+    u: "C",
+    t: 1718889726,
   },
 ];
 
@@ -99,56 +97,87 @@ async function addReading(sensorId, reading, token) {
   return response.data.data.reading;
 }
 
-async function populateDatabase() {
+async function createResources() {
   try {
-    const tokens = {};
-    const factoryIds = [];
-    const assetIds = [];
-    const sensorIds = [];
-
     // Register users
     for (const user of users) {
-      await registerUser(user);
-      const token = await loginUser(user);
-      tokens[user.email] = token;
+      try {
+        // await registerUser(user);
+        const token = await loginUser(user);
+        tokens[user.email] = token;
+      } catch (error) {
+        console.error(
+          `Error registering or logging in user ${user.email}:`,
+          error.response ? error.response.data : error.message
+        );
+      }
     }
+    console.log(tokens);
 
     // Create factories
     for (const factory of factories) {
-      const factoryData = await createFactory(factory, adminToken);
-      factoryIds.push(factoryData._id);
+      try {
+        const factoryData = await createFactory(
+          factory,
+          tokens[users[0].email]
+        );
+        factoryIds.push(factoryData._id);
+      } catch (error) {
+        console.error(
+          `Error creating factory ${factory.name}:`,
+          error.response ? error.response.data : error.message
+        );
+      }
     }
+    console.log(factoryIds);
 
     // Create assets and associate with factories
     for (let i = 0; i < assets.length; i++) {
-      const asset = assets[i];
-      const factoryId = factoryIds[i % factoryIds.length];
-      const assetData = await createAsset(asset, factoryId, adminToken);
-      assetIds.push(assetData._id);
+      try {
+        const asset = assets[i];
+        const factoryId = factoryIds[i % factoryIds.length];
+        const assetData = await createAsset(
+          asset,
+          factoryId,
+          tokens[users[0].email]
+        );
+        assetIds.push(assetData._id);
+      } catch (error) {
+        console.error(
+          `Error creating asset ${assets[i].name}:`,
+          error.response ? error.response.data : error.message
+        );
+      }
     }
+    console.log(assetIds);
 
     // Create sensors and associate with assets
     for (let i = 0; i < sensors.length; i++) {
-      const sensor = sensors[i];
-      const assetId = assetIds[i % assetIds.length];
-      const sensorData = await createSensor(sensor, assetId, adminToken);
-      sensorIds.push(sensorData._id);
-    }
-
-    // Add readings to sensors
-    for (const sensorId of sensorIds) {
-      for (const reading of readings) {
-        await addReading(sensorId, reading, adminToken);
+      try {
+        const sensor = sensors[i];
+        const assetId = assetIds[i % assetIds.length];
+        const sensorData = await createSensor(
+          sensor,
+          assetId,
+          tokens[users[0].email]
+        );
+        sensorIds.push(sensorData._id);
+      } catch (error) {
+        console.error(
+          `Error creating sensor ${sensors[i].name}:`,
+          error.response ? error.response.data : error.message
+        );
       }
     }
+    console.log(sensorIds);
 
     console.log("Database populated successfully");
   } catch (error) {
     console.error(
-      "Error populating database:",
+      "General error populating database:",
       error.response ? error.response.data : error.message
     );
   }
 }
 
-populateDatabase();
+createResources();
